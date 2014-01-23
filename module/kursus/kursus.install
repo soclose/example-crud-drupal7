@@ -1,0 +1,50 @@
+<?php
+
+/**
+ ** schema untuk table kursus
+ ** created by nurjalih
+ */
+
+
+function kursus_enable() {
+  if(db_table_exists('kursus') == FALSE) {
+     drupal_install_schema('kursus');
+  }
+}
+
+function kursus_disable() {
+     drupal_uninstall_schema('kursus');
+}
+
+function kursus_schema() {
+  $schema['kursus'] = array(
+    'description' => 'TODO : description for the table kursus',
+    'fields' => array(
+       'no_kursus' => array(
+         'type' => 'serial',
+         'description' => 'TODO : No kursus',
+         'not null' => TRUE, 
+       ),
+       'id_mahasiswa' => array(
+         'type' => 'int',
+         'description' => 'TODO : field foreign key dari table mahasiswa',
+         'not null' => TRUE,
+       ),
+       'id_materi' => array(
+         'type' => 'int',
+         'description' => 'TODO : field foreign key dari table materi',
+         'not null' => TRUE,
+       ),
+       'jadwal' => array(
+         'type' => 'varchar',
+         'length' => 15,
+         'description' => 'TODO : berapa pertemuan kursusnya',
+         'not null' => TRUE,
+       ),
+    ),
+    'primary key' => array('no_kursus'),
+  );
+
+  return $schema;
+}
+?>

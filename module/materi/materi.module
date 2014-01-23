@@ -1,0 +1,153 @@
+<?php
+
+function materi_menu() {
+  $items['materi'] = array(
+     'title' => 'Data Materi Kursus',
+     'Description' => 'All Data Course',
+     'page callback' => 'index_materi',
+     'access arguments' => array('access content'),
+     'type' => MENU_CALLBACK,
+  ); 
+  
+  $items['materi/add'] = array(
+     'title' => 'Add Materi Kursus',
+     'Description' => 'Add Data Materi',
+     'page callback' => 'drupal_get_form',
+     'page arguments' => array('add_materi'),
+     'access arguments' => array("access content"),
+     'type' => MENU_CALLBACK,
+  );
+
+  $items['materi/Delete'] = array(
+     'title' => 'Delete Materi Kursus',
+     'description' => 'Delete data',
+     'page callback' => 'delete_materi',
+     'access arguments' => array('access content'),
+     'type' => MENU_CALLBACK,
+  );
+  
+  $items['materi/Edit'] = array(
+     'title' => 'Edit Materi Kursus',
+     'description' => 'Edit data',
+     'page callback' => 'drupal_get_form',
+     'page arguments' => array('edit_materi'),
+     'access arguments' => array('access content'),
+     'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+function index_materi() {
+  $set = db_query("select * from {materi}");
+
+  if($set->rowcount() == 0) {
+     $rows[] = array(
+        array('data' => t('-')),
+        array('data' => t('-')),
+        array('data' => t('-'))
+     );
+  } else {
+     foreach($set as $data) {
+        $rows[] = array(
+           array('data' => $data->materi),
+           array('data' => l('Edit','materi/Edit',array('query' => array('data' => $data->id_materi)))),
+	   array('data' => l('Delete','materi/Delete',array('query' => array('data' => $data->id_materi))))
+        );
+     }
+  }
+  
+  $header = array(t('Judul Materi'),t('Edit'),t('Delete'));
+  $output = theme('table', array('header' => $header, 'rows' => $rows));
+  $output .= l('Add Materi','materi/add');
+
+  return $output;
+}
+
+function add_materi($form, &$form_state, $item = array()) {
+  $form['name'] = array(
+     '#type' => 'textfield',
+     '#title' => t("Nama Materi"),
+  );
+  
+  $form['submit'] = array(
+     '#type' => 'submit',
+     '#value' => t('Save'),
+     '#submit' => array('save_materi'),
+  );
+ 
+  $form['cancel'] = array(
+     '#type' => 'button',
+     '#value' => t('Cancel'),
+     '#executes_submit_callback' => TRUE,
+     '#submit' => array('index_materi'),
+  );
+
+  return $form;   
+}
+
+function save_materi($form, $form_state) {
+  $name = $form_state['values']['name'];
+
+  db_query("insert into {materi} (materi) values('{$name}')");
+  drupal_set_message("Input data berhasil");
+  drupal_goto("materi");
+}
+
+function delete_materi() {
+  $dec = array("/","\\","\"","'");
+  $id  = str_replace($dec,"",$_GET['data']);
+
+  db_query("delete from {materi} where id_materi = '{$id}'");
+  drupal_set_message("Data Berhasil Di hapus");
+  drupal_goto("materi");
+
+}
+
+function edit_materi($node, &$form_state, $item = array()){
+  $dec  = array("/","\\","\"","'");
+  $id   = str_replace($dec,"",$_GET['data']);
+  
+  $set  = db_query("select * from {materi} where id_materi = '{$id}'");
+  $data = array();
+  
+  foreach($set as $get_data) {
+    $data = (array)$get_data;
+  }	
+  
+  $form['id'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $data['id_materi'],
+  );
+  
+   $form['name'] = array(
+     '#type' => 'textfield',
+     '#default_value' => $data['materi'],
+     '#title' => t("Nama Materi"),
+  );
+  
+  $form['submit'] = array(
+     '#type' => 'submit',
+     '#value' => t('Update'),
+     '#submit' => array('update_materi'),
+  );
+ 
+  $form['cancel'] = array(
+     '#type' => 'button',
+     '#value' => t('Cancel'),
+     '#executes_submit_callback' => TRUE,
+     '#submit' => array('index_materi'),
+  );
+
+  return $form;
+}
+
+function update_materi($form, $form_state){
+  $id   = $form_state['values']['id'];
+  $name	= $form_state['values']['name'];
+  
+  db_query("update materi set materi = '{$name}' where id_materi = '{$id}'");
+  drupal_set_message("Update data berhasil");
+  drupal_goto("materi");
+}
+?>

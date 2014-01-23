@@ -1,0 +1,84 @@
+<?php
+
+/**
+ ** file schema untuk database
+ ** created by nurjalih
+ */
+
+function mahasiswa_install() {
+	drupal_install_schema('mahasiswa');
+}
+
+function mahasiswa_uninstall() {
+	drupal_uninstall_schema('mahasiswa');
+}
+
+function mahasiswa_enable() {
+	if(db_table_exists('mahasiswa') == FALSE) {
+		drupal_install_schema('mahasiswa');
+	}
+}
+
+function mahasiswa_disable() {
+	if(db_table_exists('mahasiswa') == TRUE) {
+		drupal_uninstall_schema('mahasiswa');
+	}
+}
+
+function mahasiswa_schema() {
+  
+  $schema['mahasiswa'] = array(
+     'description' => 'TODO : Please describe this table',
+     'fields' => array(
+         'id_mahasiswa' => array(
+              'type' => 'serial',
+              'description' => 'TODO : Please describe this field',
+              'not null' => TRUE,
+         ),
+
+         'nama_mahasiswa' => array(
+              'type' => 'varchar',
+              'length' => 255,
+              'description' => 'TODO : Please describe this field',
+              'not null' => FALSE,
+         ),
+
+         'alamat' => array(
+              'type' => 'text',
+              'description' => 'TODO : Please describe this field',
+              'not null' => FALSE,
+         ),
+
+         'jk' => array(
+              'type' => 'varchar',
+              'length' => 2,
+              'description' => 'TODO : Please describe this field',
+              'not null' => TRUE,
+         ),
+         
+         'telp' => array(
+              'type' => 'varchar',
+              'length' => 13,
+              'description' => 'TODO : Please describe this field',
+              'not null' => TRUE,
+         ),
+         'id_materi' => array(
+              'type' => 'varchar',
+              'length' => 2,
+              'description' => 'TODO : Please describe this field',
+              'not null' => TRUE,
+         ),
+         'jadwal' => array(
+              'type' => 'varchar',
+              'length' => 5,
+              'description' => 'TODO : Please describe this field',
+              'not null' => TRUE,
+         ),
+     ),
+     'primary key' => array('id_mahasiswa'),
+  );
+
+  return $schema;
+
+}
+?>

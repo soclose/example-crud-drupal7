@@ -1,0 +1,6 @@
+name = Materi Kursus
+description = all about materi kursus
+pasckage = materi kursus
+version = 7.x-23-12-13
+core = 7.x
+

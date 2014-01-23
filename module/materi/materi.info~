@@ -1,0 +1,5 @@
+name = Materi
+description = a module for materi kursus
+package = Materi
+version = 7.x-23-12-13
+core = 7.

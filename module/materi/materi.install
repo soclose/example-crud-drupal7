@@ -1,0 +1,34 @@
+<?php
+
+function materi_enable() {
+  if(db_table_exists('materi') == FALSE) {
+     drupal_install_schema('materi');
+  }
+}
+
+function materi_disable() {
+     drupal_uninstall_schema('materi');
+}
+
+function materi_schema() {
+  $schema['materi'] = array(
+    'description' => 'TODO : Create table Materi',
+    'fields' => array(
+      'id_materi' => array(
+         'type' =>'serial',
+         'descrption' => 'TODO : Please do not empty this field',
+         'not null' => TRUE,
+       ),
+       'materi' => array(
+         'type' => 'varchar',
+         'description' => 'TODO : Materi Of Course',
+         'length' => 50,
+       ),
+    ),
+    'primary key' => array('id_materi'),
+     
+  );
+  
+  return $schema;
+}
+?>

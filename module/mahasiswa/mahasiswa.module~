@@ -1,0 +1,333 @@
+<?php
+function mahasiswa_menu() {
+  $items['mahasiswa'] = array(
+    'title' => 'Data Mahasiswa',
+    'description' => 'Mencoba belajar pembuatan module di drupal',
+    'page callback' => 'mahasiswa_index',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+  
+  $items['mahasiswa/add'] = array(
+    'title' => 'Add Data Mahasiswa',
+    'description' => 'Add Data Mahasiswa',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('add_mahasiswa'),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['mahasiswa/delete'] = array(
+    'title' => 'Delete data mahasiswa',
+    'description' => 'page to delete mahasiswa',
+    'page callback' => 'mahasiswa_delete',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['mahasiswa/edit'] = array(
+    'title' => 'Edit data mahasiswa',
+    'description' => 'page edit data mahasiswa',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('mahasiswa_edit'),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+function mahasiswa_index() {
+  
+  $result = db_query("select * from {mahasiswa}");
+  
+  if($result->rowCount() == 0) {
+     	$rows[] = array(
+		array('data' => t('-')),
+		array('data' => t('-')),
+		array('data' => t('-')),
+		array('data' => t('-')),
+		array('data' => t('-')),
+                array('data' => t('-'))
+	);
+  }else{
+	  
+	foreach($result as $data) {
+
+	if($data->jk == 'L') {
+	   $jenis_kelamin = 'Laki - Laki';
+	} else {
+	   $jenis_kelamin = 'Perempuan';
+	}
+
+	     $rows[] = array(
+		array('data' => t($data->nama_mahasiswa)),
+		array('data' => t($data->alamat)),
+		array('data' => t($jenis_kelamin)),
+                array('data' => t($data->telp)),
+		array('data' => l('edit', 'mahasiswa/edit', array('query' => array('id'=>$data->id_mahasiswa)))),
+		array('data' => l('delete', 'mahasiswa/delete', array('query' => array('id'=>$data->id_mahasiswa))))
+	     );
+	}
+  }
+
+  $header = array(t('Nama Mahasiswa'),t('Alamat'),t('Jenis Kelamin'),t('Telp'),t('Edit'),t('Delete'));
+  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('width' => '100%')));
+  $output .= l('Tambah Mahasiswa', 'mahasiswa/add');
+
+  return $output;
+}
+
+function add_mahasiswa($form, &$form_state, $item = array()) {
+  $form['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Nama Mahasiswa'),
+    '#size' => 83,
+  );
+
+  $form['alamat'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Alamat'),
+  );
+  
+  $option =array(
+    'L' => t('Laki-Laki'),
+    'P' => t('Perempuan'),
+  );
+ 
+  $form['jk'] = array(
+    '#type' => 'radios',
+    '#title' => 'Select Jenis Kelamin',
+    '#name' => t('jk'),
+    '#options' => $option,
+  );
+  
+  $form['telp'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Telp'),
+    '#size' => 83,
+  );
+  
+  $opt = list_materi();
+
+  $form['materi'] = array(
+    '#type' => 'select',
+    '#title' => 'Select your study',
+    '#name' => 'materi', 
+    '#options' => $opt,
+    '#description' => 'Select your choice',
+    '#default_value' => '0',
+    '#empty_option' => t(' -- Please Select -- '),
+
+  );
+  
+  $jadwal = array(
+    '#' => ' -- Please Select --',
+    'PAGI' => 'PAGI',
+    'SIANG' => 'SIANG',
+    'MALAM' => 'MALAM',
+  );
+
+  $form['jadwal'] = array(
+    '#type' => 'select',
+    '#name' => 'jadwal',
+    '#title' => 'Select Jadwal Course',
+    '#options' => $jadwal,
+    '#default_value' => '#',
+  );
+ 
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('save'),
+    '#submit' => array('save_mahasiswa'),
+  );
+
+  $form['cancel'] = array(
+    '#type' => 'button',
+    '#value' => t('Cancel'),
+    '#executes_submit_callback' => TRUE,
+    '#submit' => array("back"),
+  );
+
+  return $form;
+}
+
+function back() {
+  drupal_goto("mahasiswa");
+}
+
+function save_mahasiswa($form, &$form_state) {
+  $name   = $form_state['values']['name'];
+  $alamat = $form_state['values']['alamat'];
+  $jk	  = $form_state['values']['jk']; 
+  $telp   = $form_state['values']['telp'];
+  $materi = $form_state['values']['materi'];
+  $jadwal = $form_state['values']['jadwal'];  
+
+  $query = db_select("mahasiswa","a");
+  $query->addExpression('MAX(id_mahasiswa)','id');
+  $jumlah = $query->execute();
+  
+  if($jumlah->rowcount() != 0) {
+	  foreach($jumlah as $sum) {
+	     $max = $sum->id;
+	  }
+   $id = $max + 1;
+  } else {
+   $id = 1;
+  }
+  
+  db_query("insert into {mahasiswa} (id_mahasiswa,nama_mahasiswa,alamat,jk,telp,id_materi,jadwal) values ('{$id}','{$name}','{$alamat}','{$jk}','{$telp}','{$materi}','{$jadwal}')");
+
+  db_query("insert into {kursus} (id_mahasiswa, id_materi, jadwal) values('{$id}','{$materi}','{$jadwal}')");
+    
+  drupal_set_message(t("Input data mahasiswa berhasil"));
+  drupal_goto("mahasiswa");
+
+}
+
+function mahasiswa_delete(){
+  $dec = array("/","\\","\"","'");
+  $id  = str_replace($dec,"",$_GET['id']);  
+  
+  db_query("delete from {mahasiswa} where id_mahasiswa = '{$id}'");
+  db_query("delete from {kursus} where id_mahasiswa = '{$id}'");
+
+  drupal_set_message(t("Delete data mahasiswa berhasil"));
+  drupal_goto("mahasiswa");
+}
+
+function mahasiswa_edit($node, &$form_state, $item = array()) {
+  $dec  = array("/","\\","\"","'");
+  $id   = str_replace($dec,"",$_GET['id']);
+  
+  $set  = db_query("select * from {mahasiswa} where id_mahasiswa = '{$id}'");
+  $data = array();
+  
+  foreach($set as $get_data) {
+    $data = (array)$get_data;
+  }
+  
+  $form['id'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $data['id_mahasiswa'],
+  );
+  
+  $form['name'] = array(
+    '#type' => 'textfield',
+    '#name' => t("name"),
+    '#title'=> t("Nama Mahasiswa"),
+    '#required' => TRUE,
+    '#default_value' => $data['nama_mahasiswa'],
+    '#size' => 83,
+  );
+  
+  $form['alamat'] = array(
+    '#type' => 'textarea',
+    '#name' => t('alamat'),
+    '#title' => t("Alamat"),
+    '#default_value' => $data['alamat'], 
+  );
+ 
+ 
+  $form['jk'] = array(
+      '#type' => 'radios',
+      '#title' => 'Select Jenis Kelamin',
+      '#name' => t('jk'),
+      '#options' => array('L' => t('Laki-Laki'),'P' => t('Perempuan')),
+      '#default_value' => $data['jk'],
+  );
+  
+  $form['telp'] = array(
+    '#type' => 'textfield',
+    '#title'=> t("Telp"),
+    '#required' => TRUE,
+    '#default_value' => $data['telp'],
+    '#size' => 83,
+  );
+  
+  $opt = list_materi();
+  //$set = array("#" => ' -- Please Select -- ');
+
+  //$options = drupal_array_merge_deep($set,$opt);
+ 
+  $form['materi'] = array(
+    '#type' => 'select',
+    '#title' => 'Select your study',
+    '#name' => 'materi', 
+    '#options' => $opt,
+    '#description' => 'Select your choice',
+    '#default_value' => $data['id_materi'],
+
+  );
+  
+  $jadwal = array(
+    '#' => ' -- Please Select --',
+    'PAGI' => 'PAGI',
+    'SIANG' => 'SIANG',
+    'MALAM' => 'MALAM',
+  );
+
+  $form['jadwal'] = array(
+    '#type' => 'select',
+    '#name' => 'jadwal',
+    '#title' => 'Select Jadwal Course',
+    '#options' => $jadwal,
+    '#default_value' => $data['jadwal'],
+  );
+ 
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Update'),
+    '#submit' => array("update_mahasiswa"),
+  );
+
+  $form['cancel'] = array(
+    '#type' => 'button',
+    '#value' => t('Cancel'),
+    '#executes_submit_callback' => TRUE,
+    '#submit' => array("back"),
+  );
+
+  return $form;
+}
+
+
+function update_mahasiswa($form, $form_state) {
+  $id	  = $form_state['values']['id'];
+  $name	  = $form_state['values']['name'];
+  $alamat = $form_state['values']['alamat'];
+  $jk     = $form_state['values']['jk'];
+  $telp   = $form_state['values']['telp'];
+  $materi = $form_state['values']['materi'];
+  $jadwal = $form_state['values']['jadwal'];
+
+  db_query("update {mahasiswa} set nama_mahasiswa = '{$name}', alamat = '{$alamat}', jk = '{$jk}', telp = '{$telp}', id_materi = '{$materi}', jadwal = '{$jadwal}' where id_mahasiswa = '{$id}'");
+  
+  db_query("update {kursus} set id_materi = '{$materi}', jadwal = '{$jadwal}' where id_mahasiswa = '{$id}'");
+
+  drupal_set_message(t("Update Data Mahasiswa Berhasil"));
+  drupal_goto("mahasiswa");
+}
+
+function back_to_mahasiswa() {
+  drupal_goto("mahasiswa");
+}
+
+function list_materi() {
+  $set = db_query("select * from {materi}");
+  if($set->rowcount() == 0) {
+     $opt = array(
+        '#' => 'Maaf Data Tidak Ada',
+     );
+  } else {
+       
+       $opt = array();
+       foreach($set as $data) {
+          $opt[$data->id_materi] = $data->materi;  
+       }   
+  }
+  return $opt;
+}
+
+?>

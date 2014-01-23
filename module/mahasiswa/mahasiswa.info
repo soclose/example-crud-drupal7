@@ -1,0 +1,5 @@
+name = Mahasiswa
+description = an module for manage data of mahasiswa
+package = Mahasiswa
+version = 7.x-18-13
+core = 7.x

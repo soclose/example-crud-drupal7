@@ -1,0 +1,276 @@
+<?php
+
+function kursus_menu() {
+  $items['kursus'] = array(
+    'title' => 'Data Mahasiswa Kursus',
+    'description' => 'All data',
+    'page callback' => 'index_kursus',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['kursus/print'] = array(
+    'title' => 'Print Data Peserta Kursus',
+    'description' => 'Data Perorangan',
+    'page callback' => 'print_data',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['kursus/print_all'] = array(
+    'title' => 'Print Data Peserta Kursus',
+    'description' => 'Data All',
+    'page callback' => 'print_all_data',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+ 
+  return $items;
+}
+
+function index_kursus() {
+  
+  $query = db_select('mahasiswa','a');
+  $query->join('kursus','b', 'a.id_mahasiswa = b.id_mahasiswa' );
+  $query->join('materi','c', 'a.id_materi = c.id_materi');
+  $query->fields('a',array('nama_mahasiswa'));
+  $query->fields('b',array('no_kursus','id_mahasiswa','id_materi','jadwal'));
+  $query->fields('c',array('materi'));
+
+  $daftar = $query->execute();
+
+  if($daftar->rowcount() == 0) {
+     $rows[] = array(
+       array('data' => t('*')),
+       array('data' => t('-')),
+       array('data' => t('-')),
+       array('data' => t('-'))
+     ); 
+  } else {
+     foreach($daftar as $data) {
+       $rows[] = array(
+         array('data' => t($data->nama_mahasiswa)),
+         array('data' => t($data->materi)),
+         array('data' => t($data->jadwal)),
+         array('data' => l('Print','kursus/print', array('query' => array('id'=>$data->no_kursus))))
+       );
+     }
+  }
+
+  $header = array(t('Nama Mahasiswa'),t('Materi'),t('Jadwal'),t('Print'));
+  $output = theme('table', array('header' => $header, 'rows'=> $rows));
+  $output .= l(t('Print All'),'kursus/print_all');
+
+  return $output;
+}
+
+/* print data perorangan */
+
+function print_data() {
+   $id = $_GET['id'];
+   
+   $query = db_select('mahasiswa','a');
+   $query->join('kursus','b', 'a.id_mahasiswa = b.id_mahasiswa' );
+   $query->join('materi','c', 'a.id_materi = c.id_materi');
+   $query->fields('a',array('nama_mahasiswa'));
+   $query->fields('b',array('no_kursus','id_mahasiswa','id_materi','jadwal'));
+   $query->fields('c',array('materi'));
+   $query->condition('no_kursus',array($id));
+   $daftar = $query->execute();
+   foreach($daftar as $data) { 
+      $name = $data->nama_mahasiswa;
+   }
+
+   $tcpdf = report($data->no_kursus);
+   header('Content-Type: application/pdf');
+   header('Content-Length: ' . strlen($tcpdf));
+   header('Content-Disposition: attachment; filename="'.$name.'".pdf"');
+   print $tcpdf;
+   return NULL;
+}
+
+function report($no_kursus) {
+  $tcpdf = tcpdf_get_instance();
+
+  $tcpdf->DrupalInitialize(array(
+    'footer' => array(
+      'html' => '<center>PRTECH INDONESIA</center>',
+    ),
+    'header' => array(
+      'callback' => array(
+        'function' => 'tcpdf_example_default_header',
+       
+        'context' => array(
+          'welcome_message' => 'Hello, context array!',
+        ),
+      ),
+     ),
+   ));
+  
+   $query = db_select('mahasiswa','a');
+   $query->join('kursus','b', 'a.id_mahasiswa = b.id_mahasiswa' );
+   $query->join('materi','c', 'a.id_materi = c.id_materi');
+   $query->fields('a',array('nama_mahasiswa'));
+   $query->fields('b',array('no_kursus','id_mahasiswa','id_materi','jadwal'));
+   $query->fields('c',array('materi'));
+   $query->condition('no_kursus',array($no_kursus));
+   $daftar = $query->execute();
+   foreach($daftar as $data) { 
+      
+      $name = $data->nama_mahasiswa;
+      $materi = $data->materi;
+      $jadwal = $data->jadwal;
+   }
+ 
+    $tcpdf->SetY(5);
+    
+    $tcpdf->SetFont('helvetica','B',9);
+    $tcpdf->Cell(180, 5,'REPORT PROGRAM KURSUS SAUDARA '.$name,'','0','L',FALSE);
+    
+    $image_file = 'sites/all/modules/kursus/drupal-logo.png';
+    $tcpdf->Image($image_file, 5, 5, 10, '', 'PNG', '', 'F');
+
+    $tcpdf->SetY(6);
+    
+    $tcpdf->SetFont('helvetica','B',8);
+    $tcpdf->SetFillColor(255,255,255);
+    $tcpdf->Cell(180, 10,'PRTECH INDONESIA','','0','L',0);
+    
+    $tcpdf->SetY(11);
+    $tcpdf->SetFont('helvetica','i',6);
+    $tcpdf->SetFillColor(255,255,255);
+    $tcpdf->Cell(180, 10,'JL.KH.Hasyim Ashari NO.33 Neroktog Tangerang Banten','','0','L',0);
+    
+    $tcpdf->SetY(14);
+    $tcpdf->SetFont('helvetica','i',6);
+    $tcpdf->SetFillColor(255,255,255);
+    $tcpdf->Cell(180, 10,'Telp : 089654903110','','0','L',0);
+
+    $tcpdf->SetXY(5,25);
+    $tcpdf->SetFont('helvetica','B',7);
+    $tcpdf->Cell(10, 5,'NO','LT','0','C',true);
+    $tcpdf->Cell(40, 5,'NAMA PERSERTA KURSUS','LT','0','C',true);
+    $tcpdf->Cell(130, 5,'MATERI KURSUS','LT','0','C',true);
+    $tcpdf->Cell(20, 5,'WAKTU','LTR','0','C',true);
+    
+    $tcpdf->ln();
+
+    $y = $tcpdf->getY();
+    $tcpdf->SetXY(5,$y);
+    $tcpdf->SetFont('helvetica','',7);
+    $tcpdf->Cell(10, 5,$no_kursus,'LTB','0','C',true);
+    $tcpdf->Cell(40, 5,$name,'LTB','0','C',true);
+    $tcpdf->Cell(130, 5,$materi,'LTB','0','C',true);
+    $tcpdf->Cell(20, 5,$jadwal,'LTRB','0','C',true);
+
+    return $tcpdf->Output('REPROT'.$name.'.pdf', 'S');
+
+}
+
+/* print all data */
+
+function print_all_data() {
+   
+   $query = db_select('mahasiswa','a');
+   $query->join('kursus','b', 'a.id_mahasiswa = b.id_mahasiswa' );
+   $query->join('materi','c', 'a.id_materi = c.id_materi');
+   $query->fields('a',array('nama_mahasiswa'));
+   $query->fields('b',array('no_kursus','id_mahasiswa','id_materi','jadwal'));
+   $query->fields('c',array('materi'));
+   $daftar = $query->execute();
+   foreach($daftar as $data) { 
+      $name = $data->nama_mahasiswa;
+   }
+
+   $tcpdf = report_all();
+   header('Content-Type: application/pdf');
+   header('Content-Length: ' . strlen($tcpdf));
+   header('Content-Disposition: attachment; filename=All .pdf"');
+   print $tcpdf;
+   return NULL;
+}
+
+function report_all() {
+  $tcpdf = tcpdf_get_instance();
+
+  $tcpdf->DrupalInitialize(array(
+    'footer' => array(
+      'html' => '<center>PRTECH INDONESIA</center>',
+    ),
+    'header' => array(
+      'callback' => array(
+        'function' => 'tcpdf_example_default_header',
+       
+        'context' => array(
+          'welcome_message' => 'Hello, context array!',
+        ),
+      ),
+     ),
+   ));
+  
+    $query = db_select('mahasiswa','a');
+    $query->join('kursus','b', 'a.id_mahasiswa = b.id_mahasiswa' );
+    $query->join('materi','c', 'a.id_materi = c.id_materi');
+    $query->fields('a',array('nama_mahasiswa'));
+    $query->fields('b',array('no_kursus','id_mahasiswa','id_materi','jadwal'));
+    $query->fields('c',array('materi'));
+    $daftar = $query->execute();
+ 
+    $tcpdf->SetY(5);
+    
+    $tcpdf->SetFont('helvetica','B',9);
+    $tcpdf->Cell(180, 5,'REPORT PESERTA PROGRAM KURSUS ','','0','L',FALSE);
+    
+    $image_file = 'sites/all/modules/kursus/drupal-logo.png';
+    $tcpdf->Image($image_file, 5, 5, 10, '', 'PNG', '', 'F');
+
+    $tcpdf->SetY(6);
+    
+    $tcpdf->SetFont('helvetica','B',8);
+    $tcpdf->SetFillColor(255,255,255);
+    $tcpdf->Cell(180, 10,'PRTECH INDONESIA','','0','L',0);
+    
+    $tcpdf->SetY(11);
+    $tcpdf->SetFont('helvetica','i',6);
+    $tcpdf->SetFillColor(255,255,255);
+    $tcpdf->Cell(180, 10,'JL.KH.Hasyim Ashari NO.33 Neroktog Tangerang Banten','','0','L',0);
+    
+    $tcpdf->SetY(14);
+    $tcpdf->SetFont('helvetica','i',6);
+    $tcpdf->SetFillColor(255,255,255);
+    $tcpdf->Cell(180, 10,'Telp : 089654903110','','0','L',0);
+
+    $tcpdf->SetXY(5,25);
+    $tcpdf->SetFont('helvetica','B',7);
+    $tcpdf->Cell(10, 5,'NO','LT','0','C',true);
+    $tcpdf->Cell(40, 5,'NAMA PERSERTA KURSUS','LT','0','C',true);
+    $tcpdf->Cell(130, 5,'MATERI KURSUS','LT','0','C',true);
+    $tcpdf->Cell(20, 5,'WAKTU','LTR','0','C',true);
+    
+    $tcpdf->ln();
+
+    foreach($daftar as $data) { 
+      $y = $tcpdf->getY();
+      $tcpdf->SetXY(5,$y);
+      $no_kursus = $data->no_kursus;
+      $name      = $data->nama_mahasiswa;
+      $materi    = $data->materi;
+      $jadwal    = $data->jadwal;
+      
+      $tcpdf->SetFont('helvetica','',7);
+      $tcpdf->Cell(10, 5,$no_kursus,'LTB','0','C',true);
+      $tcpdf->Cell(40, 5,$name,'LTB','0','C',true);
+      $tcpdf->Cell(130, 5,$materi,'LTB','0','C',true);
+      $tcpdf->Cell(20, 5,$jadwal,'LTRB','0','C',true);
+
+      $tcpdf->ln();
+   }
+    
+
+    return $tcpdf->Output('REPROT All.pdf', 'S');
+
+}
+
+?>
+
+
